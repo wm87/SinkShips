@@ -1,142 +1,129 @@
-// Spielfeldgröße und Schiffeinstellungen
-const boardSize = 10;
-let cntShipElements = 0;
-const gameBoard = document.getElementById("game-board");
-const message = document.getElementById("message");
+"use strict";
 
-const ships = [
-    { size: Math.floor(Math.random() * 3) + 3 },
-    { size: Math.floor(Math.random() * 3) + 3 },
-    { size: Math.floor(Math.random() * 3) + 3 },
-    { size: Math.floor(Math.random() * 3) + 3 },
-    { size: Math.floor(Math.random() * 3) + 3 }
-];
+$(document).ready(function () {
+    // Spielfeldgröße und Schiffeinstellungen
+    const boardSize = 10;
+    let cntShips = 0;
+    const $gameBoard = $("#game-board");
+    const $message = $("#message");
 
-ships.forEach(element => {
-    cntShipElements += element["size"];
-});
+    let maxTries = 20;
+    let rdnDir = "", rdnPosX = "", rdnPosY = "";
 
-let board = [];
+    const board = Array.from({ length: 10 }, () => Array(10).fill(""));
+    const ships = Array.from({ length: 8 }, () => ({ size: Math.floor(Math.random() * 3) + 3 }));
 
-for (let i = 0; i < 10; i++) {
-    board[i] = [];
-    for (let j = 0; j < 10; j++) {
-        board[i][j] = "";
-    }
-}
+    function getPossiblePosition(x, y, len, direction) {
+        if (direction === "h") {
+            const minX = (x - 1 < 0) ? 0 : x - 1;
+            const minY = (y - 1 < 0) ? 0 : y - 1;
+            const maxX = (x + 1 >= boardSize) ? boardSize : x + 2;
+            const maxY = (y + len + 1 >= boardSize) ? boardSize : y + len + 1;
 
-function getPossiblePosition(x, y, len, direction) {
+            for (let i = minX; i < maxX; i++) {
+                for (let j = minY; j < maxY; j++) {
+                    if (board[i][j] === "X") {
+                        return false;
+                    }
+                }
+            }
 
-    if (direction === "h") {
+            console.log(`horizontal: x: ${x + 1}, y: ${y + 1}, len: ${len}`);
 
-        minX = (x - 1 < 0) ? 0 : x - 1;
-        minY = (y - 1 < 0) ? 0 : y - 1;
-        maxX = (x + 1 >= boardSize) ? boardSize : x + 2;
-        maxY = (y + len + 1 >= boardSize) ? boardSize : y + len + 1;
-
-        for (let i = minX; i < maxX; i++) {
-            for (let j = minY; j < maxY; j++) {
-                if (board[i][j] === "X") {
-                    return false;
+            for (let i = x; i < x + 1; i++) {
+                for (let j = y; j < y + len; j++) {
+                    board[i][j] = "X";
                 }
             }
         }
 
-        console.log(`horizontal: x: ${x + 1}, y: ${y + 1}, len: ${len}`);
+        if (direction === "v") {
+            const minX = (x - 1 < 0) ? 0 : x - 1;
+            const minY = (y - 1 < 0) ? 0 : y - 1;
+            const maxX = (x + len + 1 >= boardSize) ? boardSize : x + len + 1;
+            const maxY = (y + 1 >= boardSize) ? boardSize : y + 2;
 
-        for (let i = x; i < x + 1; i++) {
-            for (let j = y; j < y + len; j++) {
-                board[i][j] = "X";
+            for (let i = minX; i < maxX; i++) {
+                for (let j = minY; j < maxY; j++) {
+                    if (board[i][j] === "X") {
+                        return false;
+                    }
+                }
             }
-        }
-    }
 
-    if (direction === "v") {
+            console.log(`vertical: x: ${x + 1}, y: ${y + 1}, len: ${len}`);
 
-        minX = (x - 1 < 0) ? 0 : x - 1;
-        minY = (y - 1 < 0) ? 0 : y - 1;
-        maxX = (x + len + 1 >= boardSize) ? boardSize : x + len + 1;
-        maxY = (y + 1 >= boardSize) ? boardSize : y + 1;
-
-        for (let i = minX; i < maxX; i++) {
-            for (let j = minY; j <= maxY; j++) {
-                if (board[i][j] === "X") {
-                    return false;
+            for (let i = x; i < x + len; i++) {
+                for (let j = y; j < y + 1; j++) {
+                    board[i][j] = "X";
                 }
             }
         }
 
-        console.log(`vertical: x: ${x + 1}, y: ${y + 1}, len: ${len}`);
+        return true;
+    }
 
-        for (let i = x; i < x + len; i++) {
-            for (let j = y; j < y + 1; j++) {
-                board[i][j] = "X";
+    // Schiffe positionieren
+    while (ships.length > 0) {
+        rdnDir = Math.random() < 0.5 ? "h" : "v";
+        rdnPosX = Math.floor(Math.random() * boardSize);
+        rdnPosY = Math.floor(Math.random() * boardSize);
+
+        if (rdnDir === "h" && ships[0] && (rdnPosY + ships[0].size) < boardSize) {
+            if (getPossiblePosition(rdnPosX, rdnPosY, ships[0].size, "h")) {
+                cntShips += ships[0].size;
+                ships.shift();
+                maxTries = 20;
+            }
+        } else if (rdnDir === "v" && ships[0] && (rdnPosX + ships[0].size) < boardSize) {
+            if (getPossiblePosition(rdnPosX, rdnPosY, ships[0].size, "v")) {
+                cntShips += ships[0].size;
+                ships.shift();
+                maxTries = 20;
             }
         }
-    }
 
-    return true;
-}
-
-// Schiffe positionieren
-do {
-    const rdnDir = Math.random() < 0.5 ? "h" : "v";
-    const rdnPosX = Math.floor(Math.random() * boardSize);
-    const rdnPosY = Math.floor(Math.random() * boardSize);
-
-    if (rdnDir === "h" &&
-        (rdnPosY + ships[0]["size"]) < boardSize) {
-
-        if (getPossiblePosition(rdnPosX, rdnPosY, ships[0]["size"], "h")) {
+        maxTries--;
+        if (maxTries === 0) {
             ships.shift();
+            maxTries = 10;
         }
     }
 
-    if (rdnDir === "v" &&
-        (rdnPosX + ships[0]["size"]) < boardSize) {
-
-        if (getPossiblePosition(rdnPosX, rdnPosY, ships[0]["size"], "v")) {
-            ships.shift();
+    // Spielfeld zeichnen
+    for (let i = 0; i < boardSize; i++) {
+        for (let j = 0; j < boardSize; j++) {
+            const $cell = $("<div>")
+                .addClass("cell")
+                .data({ x: i, y: j });
+            //.text(board[i][j]);
+            $gameBoard.append($cell);
         }
     }
 
-} while (ships.length > 0);
+    // Klick-Event für Zellen
+    let hits = 0;
+    $gameBoard.on("click", ".cell", function () {
+        const $cell = $(this);
+        if ($cell.hasClass("hit") || $cell.hasClass("miss")) {
+            return;
+        }
 
+        const x = $cell.data("x");
+        const y = $cell.data("y");
 
-// Spielfeld zeichnen
-for (let i = 0; i < boardSize; i++) {
-    for (let j = 0; j < boardSize; j++) {
-        const cell = document.createElement("div");
-        cell.classList.add("cell");
-        cell.dataset.x = i;
-        cell.dataset.y = j;
-        //cell.textContent = board[i][j];
-        gameBoard.appendChild(cell);
-    }
-}
+        if (board[x][y] === "X") {
+            $cell.addClass("hit");
+            $message.text("Treffer!");
+            hits++;
+        } else {
+            $cell.addClass("miss");
+            $message.text("Daneben!");
+        }
 
-// Klick-Event für Zellen
-let hits = 0;
-gameBoard.addEventListener("click", (e) => {
-    const cell = e.target;
-    if (!cell.classList.contains("cell") || cell.classList.contains("hit") || cell.classList.contains("miss")) {
-        return;
-    }
-
-    const x = parseInt(cell.dataset.x);
-    const y = parseInt(cell.dataset.y);
-
-    if (board[x][y] === "X") {
-        cell.classList.add("hit");
-        message.textContent = "Treffer!";
-        hits++;
-    } else {
-        cell.classList.add("miss");
-        message.textContent = "Daneben!";
-    }
-
-    if (hits === cntShipElements) {
-        message.textContent = "Du hast alle Schiffe versenkt!";
-        gameBoard.style.pointerEvents = "none";
-    }
+        if (hits === cntShips) {
+            $message.text("Du hast alle Schiffe versenkt!");
+            $gameBoard.css("pointerEvents", "none");
+        }
+    });
 });
